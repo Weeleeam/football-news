@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-bc6tz^v)&#5v1!h1ww_-ft_=o=9w3o1ep##ipl)_z(#)0d7-4o
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "http://Weeleeam-william-jonnatan-footballnews.pbp.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "william-jonnatan-footballnews.pbp.cs.ui.ac.id"]
 
 
 # Application definition
