@@ -12,8 +12,11 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils.html import strip_tags
+import requests
+import json
+from django.http import JsonResponse
 
-@login_required(login_url='/login')
+# @login_required(login_url='/login')
 def show_main(request):
     filter_type = request.GET.get("filter", "all")  # default 'all'
     if filter_type == "all":
@@ -57,9 +60,9 @@ def show_news(request, id):
     return render(request, "news_detail.html", context)
 
 def show_xml(request):
-     news_list = News.objects.all()
-     xml_data = serializers.serialize("xml", news_list)
-     return HttpResponse(xml_data, content_type="application/xml")
+    news_list = News.objects.all()
+    xml_data = serializers.serialize("xml", news_list)
+    return HttpResponse(xml_data, content_type="application/xml")
 
 def show_json(request):
     news_list = News.objects.all()
@@ -164,7 +167,7 @@ def add_news_entry_ajax(request):
     content = strip_tags(request.POST.get("content"))
     category = request.POST.get("category")
     thumbnail = request.POST.get("thumbnail")
-    is_featured = request.POST.get("is_featured") == 'on'  # checkbox handling
+    is_featured = request.POST.get("is_featured") == 'on' 
     user = request.user
 
     new_news = News(
@@ -178,3 +181,46 @@ def add_news_entry_ajax(request):
     new_news.save()
 
     return HttpResponse(b"CREATED", status=201)
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
+@csrf_exempt
+def create_news_flutter(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        title = strip_tags(data.get("title", ""))  # Strip HTML tags
+        content = strip_tags(data.get("content", ""))  # Strip HTML tags
+        category = data.get("category", "")
+        thumbnail = data.get("thumbnail", "")
+        is_featured = data.get("is_featured", False)
+        user = request.user
+        
+        new_news = News(
+            title=title, 
+            content=content,
+            category=category,
+            thumbnail=thumbnail,
+            is_featured=is_featured,
+            user=user
+        )
+        new_news.save()
+        
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
